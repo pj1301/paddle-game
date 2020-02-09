@@ -167,6 +167,7 @@ function draw() {
   detectCollisions();
   detectTouches();
 
+  // sets the x boundaries
   if (x + dx < ballRadius || x + dx > canvas.width - ballRadius) {
     dx = -dx;
   }
@@ -188,6 +189,7 @@ function draw() {
     clearInterval(game);
   }
 
+  // moves the paddle on each subsequent render
   if (moveRight && paddleX < canvas.width - paddleWidth) {
     paddleX += 6;
   } 
@@ -196,6 +198,7 @@ function draw() {
     paddleX -= 6;
   }
 
+  // moves the ball on each subsequent render
   x += dx;
   y += dy;
 }
