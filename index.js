@@ -3,9 +3,12 @@ document.addEventListener('DOMContentLoaded', () => console.log('Page loaded suc
 const canvas = document.getElementById('game-board');
 const ctx = canvas.getContext('2d');
 
+let score = 0;
+let winner = false;
+
 // Object Variables
 const ballRadius = 10;
-const paddleHeight = 20;
+const paddleHeight = 10;
 const paddleWidth = 75;
 let paddleX = (canvas.width - paddleWidth) / 2;
 const brickRowCount = 3;
@@ -15,6 +18,8 @@ const brickHeight = 20;
 const brickPadding = 10;
 const brickOffsetTop = 30;
 const brickOffsetLeft = 30;
+let totalBricks = brickRowCount * brickColumnCount;
+let touches = 0;
 
 // Canvas Variables
 let x = canvas.width / 2;
@@ -64,12 +69,43 @@ function detectCollisions() {
     for (let j = 0; j < brickRowCount; j++) {
       const b = bricks[i][j];
       if (b.status) {
-        if(x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
+        if (x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
           dy = -dy;
           b.status = false;
+          const value = calculateScorePenalty();
+          score += value;
+          totalBricks -= 1;
+          accelerate();
         }
       }
     }
+  }
+}
+
+function detectTouches() {
+  if ((y + dy) > (canvas.height - (ballRadius + paddleHeight)) && (x + dx) > paddleX && (x + dx) < (paddleX + paddleWidth)) {
+    console.log('Touch');
+    touches += 1;
+  }
+}
+
+// score penalty
+function calculateScorePenalty() {
+  const modifier = 0.5 * touches;
+  return Math.floor(10 - modifier);
+}
+
+// change speed of ball
+function accelerate() {
+  if (dx < 0) {
+    dx -= 0.1;
+  } else {
+    dx += 0.1
+  }
+  if (dy < 0) {
+    dy -= 0.1;
+  } else {
+    dy += 0.1;
   }
 }
 
@@ -95,7 +131,7 @@ function drawBall() {
 }
 
 function drawPaddle() {
-  createSquare(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight, "red");
+  createSquare(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight, "#0095DD");
 }
 
 function drawBricks() { // fine
@@ -106,27 +142,42 @@ function drawBricks() { // fine
         let brickY = (j * (brickHeight + brickPadding))+brickOffsetTop;
         bricks[i][j].x = brickX;
         bricks[i][j].y = brickY;
-        createSquare(brickX, brickY, brickWidth, brickHeight, "black")
+        createSquare(brickX, brickY, brickWidth, brickHeight, "grey")
       }
     }
   }
 }
 
-
-
 function draw() {
+  if (totalBricks === 0) {
+    setTimeout(() => {
+      if (!winner) {
+        alert(`YOU WON - YOUR SCORE IS ${score}`);
+        winner = true;
+      }
+      document.location.reload();
+      clearInterval(game);
+    }, 100);
+  }
+
   ctx.clearRect(0, 0, canvas.width, canvas.height); // sets the area to be cleared
   drawBricks();
   drawBall();
   drawPaddle();
   detectCollisions();
+  detectTouches();
 
   if (x + dx < ballRadius || x + dx > canvas.width - ballRadius) {
     dx = -dx;
   }
   
   // sets the y boundaries (including the paddle if present)
-  if (y + dy < ballRadius || y + dy > canvas.height - (ballRadius + paddleHeight) && x > paddleX && x < paddleX + paddleWidth) {
+  if (y + dy < ballRadius) {
+    dy = -dy;
+  }
+  
+  // a separate condition is needed to work with the paddle boundaries otherwise the ball can get stuck inside the paddle
+  if (y + dy > canvas.height - (ballRadius + paddleHeight) && x > paddleX && x < paddleX + paddleWidth && dy > 0) {
     dy = -dy;
   }
 
@@ -138,11 +189,11 @@ function draw() {
   }
 
   if (moveRight && paddleX < canvas.width - paddleWidth) {
-    paddleX += 7;
+    paddleX += 6;
   } 
 
   if (moveLeft && paddleX > 0) {
-    paddleX -= 7;
+    paddleX -= 6;
   }
 
   x += dx;
